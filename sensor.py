@@ -7,9 +7,14 @@ import time
 import datetime
 import subprocess
 import numpy
+import dht11
+import RPi.GPIO as GPIO
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
+
+#define GPIO 14 as DHT11 data pin
+Temp_sensor = 14
 
 SENSOR_INFO_FILE = os.getenv("SENSOR_INFO_FILE", "")
 FIREBASE_SDK_JSON = os.getenv("FIREBASE_SDK_JSON", "")
@@ -20,13 +25,14 @@ JST = datetime.timezone(datetime.timedelta(hours=+9), 'JST')
 def main():
 	nowTime = datetime.datetime.now(JST)
 	nowTemp = get_temp()
+	temperature, humidity = get_temp_sensor()
 
 	if is_hot(nowTemp):
 		set_usb_power(True)
 	else:
 		set_usb_power(False)
 
-	save_to_firestore(nowTime, nowTemp)
+	save_to_firestore(nowTime, nowTemp, temperature, humidity)
 
 def is_hot(temp):
 	return temp > TEMPERATURE_THRESHOLD
@@ -51,7 +57,17 @@ def get_sensor_raw():
 	except:
 		return None
 
-def save_to_firestore(now, water_temp):
+def get_temp_sensor():
+	GPIO.setwarnings(False)
+	GPIO.setmode(GPIO.BCM)
+	instance = dht11.DHT11(pin = Temp_sensor)
+	while True:
+		result = instance.read()
+		if result.temperature > 0:
+			return result.temperature,result.humidity
+		time.sleep(0.05)
+
+def save_to_firestore(now, water_temp, temperature, humidity):
 	credential = credentials.Certificate(FIREBASE_SDK_JSON)
 	firebase_admin.initialize_app(credential)
 
@@ -61,7 +77,8 @@ def save_to_firestore(now, water_temp):
             u'date': now.strftime('%Y-%m-%d'),
             u'time': now.strftime('%H:%M'),
 	    u'water_temperature': water_temp,
-	    u'temperature': 0
+	    u'temperature': temperature,
+	    u'humidity': humidity,
 	    })
 
 if __name__ == '__main__':
