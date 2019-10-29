@@ -29,8 +29,8 @@ def main():
 
 	if is_hot(nowTemp):
 		set_usb_power(True)
-	else:
-		set_usb_power(False)
+	#else:
+		#set_usb_power(False)
 
 	save_to_firestore(nowTime, nowTemp, temperature, humidity)
 
