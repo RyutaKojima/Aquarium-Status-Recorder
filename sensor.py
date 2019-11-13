@@ -5,9 +5,9 @@ import os
 import sys
 import time
 import datetime
-import subprocess
 import numpy
 import dht11
+import ds18b20
 import RPi.GPIO as GPIO
 import firebase_admin
 from firebase_admin import credentials
@@ -24,15 +24,15 @@ JST = datetime.timezone(datetime.timedelta(hours=+9), 'JST')
 
 def main():
 	nowTime = datetime.datetime.now(JST)
-	nowTemp = get_temp()
+	water_temp = get_water_temp()
 	temperature, humidity = get_temp_sensor()
 
-	if is_hot(nowTemp):
+	if is_hot(water_temp):
 		set_usb_power(True)
 	#else:
 		#set_usb_power(False)
 
-	save_to_firestore(nowTime, nowTemp, temperature, humidity)
+	save_to_firestore(nowTime, water_temp, temperature, humidity)
 
 def is_hot(temp):
 	return temp > TEMPERATURE_THRESHOLD
@@ -43,19 +43,9 @@ def set_usb_power(isOn):
 	else:
 		os.system('sudo hub-ctrl -b 1 -d 2 -P 2 -p 0')
 
-def get_temp():
-	sensorData = get_sensor_raw()
-	if sensorData is None:
-		sys.exit(1)
-
-	temp_val = sensorData.split('=')
-	return round(float(temp_val[-1]) / 1000, 1)
-
-def get_sensor_raw():
-	try:
-		return subprocess.check_output(['cat', SENSOR_INFO_FILE]).decode()
-	except:
-		return None
+def get_water_temp():
+	instance = ds18b20.DS18B20(sensorInfoFile = SENSOR_INFO_FILE)
+	return instance.read()
 
 def get_temp_sensor():
 	GPIO.setwarnings(False)
