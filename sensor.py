@@ -64,12 +64,12 @@ def save_to_firestore(now, water_temp, temperature, humidity):
 	db = firestore.client()
 	doc_ref = db.collection(u'water_tank_condition').document(now.strftime('%Y-%m-%dT%H:%M'))
 	doc_ref.set({
-            u'date': now.strftime('%Y-%m-%d'),
-            u'time': now.strftime('%H:%M'),
-	    u'water_temperature': water_temp,
-	    u'temperature': temperature,
-	    u'humidity': humidity,
-	    })
+		u'date': now.strftime('%Y-%m-%d'),
+		u'time': now.strftime('%H:%M'),
+		u'water_temperature': water_temp,
+		u'temperature': temperature,
+		u'humidity': humidity,
+	})
 
 if __name__ == '__main__':
 	main()
